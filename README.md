@@ -49,7 +49,7 @@ sudo apt install build-essential
 ```
 on debian systems, not sure about arch, however with this itll try to install amount other things, make and g++(c++ for x86 and ARM)
 
-if you get a problem with the code not compiling on the first attempt. try:
+## if you get a problem with the code not compiling on the first attempt. try:
 ```sh
 sudo apt install g++
 ```
@@ -60,7 +60,7 @@ sudo pacman -S gcc
 for arch. other distros + windows can figure it out yourself
 
 
-if theres a problem with make, try
+## if theres a problem with make, try
 ```sh
 sudo apt install make
 ```
