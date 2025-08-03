@@ -41,6 +41,14 @@ make # or alternativly make -j
 
 # Debugging Compilation (not much)
 
+
+As a "catch-all" you can just use
+```sh
+sudo apt update
+sudo apt install build-essential
+```
+on debian systems, not sure about arch, however with this itll try to install amount other things, make and g++(c++ for x86 and ARM)
+
 if you get a problem with the code not compiling on the first attempt. try:
 ```sh
 sudo apt install g++
@@ -50,3 +58,14 @@ on debian systems or
 sudo pacman -S gcc
 ```
 for arch. other distros + windows can figure it out yourself
+
+
+if theres a problem with make, try
+```sh
+sudo apt install make
+```
+on debian systems. or use
+```sh 
+sudo pacman -S make
+```
+for arch users, for windows, theres a website to go to.
