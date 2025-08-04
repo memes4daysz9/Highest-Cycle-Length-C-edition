@@ -1,7 +1,7 @@
 # Compiler and flags
 CXX := g++
 CXXFLAGS := -Wall -Wextra -Iinclude -g -pg
-LDFLAGS = -pg
+LDFLAGS := -pg
 
 # Directories
 SRC_DIR := src
@@ -16,9 +16,9 @@ OBJS := $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 # Default rule
 all: $(BIN)
 
-# Link the final binary
+# Link the final binary (now uses LDFLAGS!)
 $(BIN): $(OBJS)
-	$(CXX) $(OBJS) -o $@
+	$(CXX) $(LDFLAGS) $(OBJS) -o $@
 
 # Compile source files to object files
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
@@ -28,8 +28,14 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
 $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
 
-# Clean build files
-clean:
-	rm -rf $(OBJ_DIR) $(BIN)
+# Run the binary and profile
+profile: $(BIN)
+	./$(BIN)
+	gprof $(BIN) gmon.out > analysis.txt
+	cat analysis.txt | less
 
-.PHONY: all clean
+# Clean build files and profiling output
+clean:
+	rm -rf $(OBJ_DIR) $(BIN) gmon.out analysis.txt
+
+.PHONY: all clean profile

@@ -1,37 +1,47 @@
+//          running till base 2500
 // benchmark to beat = 1.555468649 (rust)
-// Achieved            1.202134    (C++ (This file))
+// Achieved            1.330082    (C++ (This file))
+
+//          running till base 10,000
+//  benchmark to beat = 87.57     (rust)
+//  Achieved            43.304906 (C++ (This file))
 
 #include <iostream>
 #include <cstdint>
 #include <thread>
 #include <vector> //OHHHH YEAHHH (i had to)
 #include <chrono>
+#include <atomic>
+#include <bitset>
 using namespace std;
 
-const uint64_t CPUthreadCount = static_cast<uint64_t>(std::thread::hardware_concurrency() * 2);
+const uint32_t CPUthreadCount = static_cast<uint32_t>(std::thread::hardware_concurrency());
 
-//const uint64_t CPUthreadCount = 6; // Uncomment to run custom number of threads
+//const uint32_t CPUthreadCount = 6; // Uncomment to run custom number of threads
 
-const uint64_t Target = 2500;//benchmark value
+const uint32_t Target = 10000;
 
-uint64_t result[Target - 1] = {};
+std::atomic<uint32_t> result[Target] = {0};
 
-bool Prime(uint64_t num) // c doesnt have a function to check for primes
-{
+uint32_t seen[Target] = {};
+uint32_t Pass = 1;
+
+bool Prime(uint32_t num) {
     if (num <= 1) return false;
+    if (num == 2 || num == 3) return true;
     if (num % 2 == 0 || num % 3 == 0) return false;
-    for (uint64_t i = 2; i < num; i++) {
-        if (num % i == 0)
+    for (uint32_t i = 5; i * i <= num; i += 6) {
+        if (num % i == 0 || num % (i + 2) == 0)
             return false;
     }
     return true;
 }
 
-uint64_t qmod(uint64_t n , uint64_t x , uint64_t b)
+uint32_t qmod(uint32_t n , uint32_t x , uint32_t b)
 {
-    uint64_t r = 1;
-    uint64_t base = n % b;
-    uint64_t exp = x;
+    uint32_t r = 1;
+    uint32_t base = n % b;
+    uint32_t exp = x;
 
     while (exp > 0)
     {
@@ -45,53 +55,21 @@ uint64_t qmod(uint64_t n , uint64_t x , uint64_t b)
     return r;
 }
 
-/*
-    let mut r = 1;
-    let mut base = n % b;
-    let mut exp = x;
-    while exp > 0 {
-        if exp % 2 == 1 {
-            r = (r * base) % b;
-        }
-        base = (base * base) % b;
-        exp /= 2;
-    }
-    r
-
-*/
-uint64_t CycleLength(uint64_t n, uint64_t b)
-{
-
-    bool seen[Target] = {};
-    uint64_t x = 1;
-
-    while (true)
-    {
-        uint64_t Qmod = qmod(n,x,b);
-        if (seen[Qmod])
-        {
+uint32_t CycleLength(uint32_t n, uint32_t b) {
+    uint32_t x = 1;
+    Pass++; // mark a new round
+    while (true) {
+        uint32_t q = qmod(n, x, b);
+        if (seen[q] == Pass)
             break;
-        }
-        seen[Qmod] = true;
+        seen[q] = Pass;
         x++;
     }
     return x - 1;
 }
 
-/* 
-    let mut seen = [false; GOAL];
-    let mut x = 1;
-    loop {
-        let qmod = qmod(n, x, b) as usize;
-        if seen[qmod] {
-            break;
-        }
-        seen[qmod] = true;
-        x += 1;
-    }
-    x - 1
-    */
-uint64_t HighestCycleLength(uint64_t x)
+
+inline uint32_t HighestCycleLength(uint32_t x)
 {
     if (Prime(x))
     {
@@ -99,10 +77,10 @@ uint64_t HighestCycleLength(uint64_t x)
     }
     else 
     {
-        uint64_t m = 0;
-        for (uint64_t i = 2; i < x; i++)
+        uint32_t m = 0;
+        for (uint32_t i = 2; i < x; i++)
         {
-            uint64_t b = CycleLength(i,x);
+            uint32_t b = CycleLength(i,x);
             if (b > m)
             {
                 m = b;
@@ -111,40 +89,41 @@ uint64_t HighestCycleLength(uint64_t x)
         return m;
     }
 }
-/*
-    if is_prime(x) {
-        x - 1
-    } else {
-        let mut m = 1;
-        for i in 2..x {
-            let b = cyclength(i, x);
-            if b > m {
-                m = b;
+
+
+inline void worker(uint8_t WorkerNum)
+{
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(1 * WorkerNum)); // sleeps the thread enough so that race conditions with the first value shouldnt happen
+    uint32_t LastViewed = 2;// last element this worker worked on
+    
+    //std::cout << "result: " << result[Target - 1] << std::endl;
+
+    while (result[Target - 1] == 0) // while the last result doesnt have a value greater than 0
+    {
+        for (uint32_t i = LastViewed; i < Target; i++)
+        {
+            uint32_t Zero = 0;
+            if (result[i].compare_exchange_strong(Zero,UINT32_MAX))
+            {
+                result[i] = 1; // this 'cell' is now occupied
+
+                LastViewed = i;
+
+                result[i].store(HighestCycleLength(i) , std::memory_order_relaxed);
+                //std::cout << i << ":"<< result[i] << std::endl;
+                /*if ((i % 500) == 0)
+                {
+                    std::cout << "Done till: "<< i << std::endl;
+                }*/
+                break;
             }
         }
-        m
+        
     }
-*/
+    
 
-bool worker(uint8_t WorkerNum)
-{
-    /*
-    results_t[i] = highest_cyclength(x);
-    if x % 100 == 0 {
-        eprintln!("{x}");
-    }*/
-
-    for (uint64_t i = WorkerNum; i <= Target; i += CPUthreadCount)
-    {
-        result[i] = HighestCycleLength(i);
-
-        if ((i % 500) == 0)
-        {
-            std::cout << i << std::endl;
-        }
-    }
-    std::cout << "Worker Finished: " << WorkerNum << std::endl;
-    return true;
+    //std::cout << "Worker Finished: " << WorkerNum << std::endl;
 }
 
 
@@ -154,14 +133,17 @@ int main()
     //start timer
     auto StartTime = std::chrono::high_resolution_clock::now();
 
-    std::cout << "Thread count: " << CPUthreadCount << std::endl;
+    //std::cout << "Thread count: " << CPUthreadCount << std::endl;
+
+    
+    
 
     std::vector<std::thread> threads;
 
-    for (uint64_t i = 1; i < CPUthreadCount + 1; i++)
+    for (uint32_t i = 1; i < CPUthreadCount + 1; i++)
     {
         threads.emplace_back(worker , i);
-        std::cout << "Sent out worker:  " << i << std::endl;
+        //std::cout << "Sent out worker:  " << i << std::endl;
     }
 
     for (auto& thread : threads) { // when a thread finishes
@@ -172,5 +154,9 @@ int main()
     auto EndTime = std::chrono::high_resolution_clock::now();
     auto durationChrono = std::chrono::duration_cast<std::chrono::microseconds>(EndTime - StartTime);
 
+    for (uint32_t i = 0; i<500-1;i++)//print out output
+    {
+        std::cout << i << ":"<< result[i] << std::endl;
+    }
     std::cout << "Done in: " << durationChrono.count() << "   MicroSeconds using " << CPUthreadCount << "  Threads " << std::endl;
 }
