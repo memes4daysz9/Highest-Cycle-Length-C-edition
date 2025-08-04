@@ -1,3 +1,15 @@
+//          runing till base 250
+//  benchmark to beat = ?? (rust)
+// Achieved             0.101193
+
+//          runing till base 500
+//  benchmark to beat = ?? (rust)
+// Achieved             0.101254
+
+//          running till base 1000
+//  benchmark to beat = ?? (rust)
+//  Achieved            0.205093
+
 //          running till base 2500
 // benchmark to beat = 1.555468649 (rust)
 // Achieved            1.330082    (C++ (This file))
@@ -6,21 +18,29 @@
 //  benchmark to beat = 87.57     (rust)
 //  Achieved            43.304906 (C++ (This file))
 
+//          running till base 20,000
+//  benchmark to beat = ??          (rust)
+//  Achieved            262.182384  (C++ (This file))
+
 #include <iostream>
 #include <cstdint>
 #include <thread>
-#include <vector> //OHHHH YEAHHH (i had to)
+#include <vector> //Direction and magnitude OH YEAH
 #include <chrono>
 #include <atomic>
 using namespace std;
 
 const uint32_t CPUthreadCount = static_cast<uint32_t>(std::thread::hardware_concurrency());
 
-//const uint32_t CPUthreadCount = 6; // Uncomment to run custom number of threads
+//const uint32_t CPUthreadCount = 12; // Uncomment to run custom number of threads
 
-const uint32_t Target = 10000;
+const uint32_t Target = 250;
+
+const bool NoScreen = false; // set to true for benchmarking. the screen is cosmetic only
 
 std::atomic<uint32_t> result[Target] = {0};
+
+uint32_t LastElement = 0;
 
 uint32_t seen[Target] = {};
 uint32_t Pass = 1;
@@ -111,10 +131,11 @@ inline void worker(uint8_t WorkerNum)
 
                 result[i].store(HighestCycleLength(i) , std::memory_order_relaxed);
                 //std::cout << i << ":"<< result[i] << std::endl;
-                /*if ((i % 500) == 0)
+                if ((i % 50) == 0)
                 {
-                    std::cout << "Done till: "<< i << std::endl;
-                }*/
+                    //std::cout << "Done So far: "<< i << std::endl;
+                    LastElement = i;
+                }
                 break;
             }
         }
@@ -125,6 +146,17 @@ inline void worker(uint8_t WorkerNum)
     //std::cout << "Worker Finished: " << WorkerNum << std::endl;
 }
 
+void Screen()
+{
+    if (NoScreen) return;
+    while(result[Target - 1] == 0)
+    {
+        int clear = system("clear");
+        std::cout << "Last known Base computed: " << LastElement << std::endl;
+        std::cout << "Using: " << CPUthreadCount << " Threads, with a Target of: " << Target << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+}
 
 
 int main()
@@ -138,7 +170,7 @@ int main()
     
 
     std::vector<std::thread> threads;
-
+    std::thread DisplayThread(Screen);
     for (uint32_t i = 1; i < CPUthreadCount + 1; i++)
     {
         threads.emplace_back(worker , i);
@@ -148,12 +180,13 @@ int main()
     for (auto& thread : threads) { // when a thread finishes
         thread.join();
     }
+    DisplayThread.join();
 
     //stop time
     auto EndTime = std::chrono::high_resolution_clock::now();
     auto durationChrono = std::chrono::duration_cast<std::chrono::microseconds>(EndTime - StartTime);
 
-    for (uint32_t i = 0; i<500-1;i++)//print out output
+    for (uint32_t i = 0; i < Target-1;i++)//print out output
     {
         std::cout << i << ":"<< result[i] << std::endl;
     }
