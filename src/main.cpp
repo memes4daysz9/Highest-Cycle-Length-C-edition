@@ -12,7 +12,6 @@
 #include <vector> //OHHHH YEAHHH (i had to)
 #include <chrono>
 #include <atomic>
-#include <bitset>
 using namespace std;
 
 const uint32_t CPUthreadCount = static_cast<uint32_t>(std::thread::hardware_concurrency());
