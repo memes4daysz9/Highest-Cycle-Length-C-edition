@@ -30,9 +30,9 @@
 #include <atomic>
 using namespace std;
 
-const uint16_t CPUthreadCount = static_cast<uint16_t>(std::thread::hardware_concurrency());
+//const uint16_t CPUthreadCount = static_cast<uint16_t>(std::thread::hardware_concurrency());
 
-//const uint16_t CPUthreadCount = 12; // Uncomment to run custom number of threads
+const uint16_t CPUthreadCount = 6; // Uncomment to run custom number of threads
 
 const uint16_t Target = 10000; // max is 65,535
 
