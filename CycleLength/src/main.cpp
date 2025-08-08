@@ -30,37 +30,37 @@
 #include <atomic>
 using namespace std;
 
-const uint32_t CPUthreadCount = static_cast<uint32_t>(std::thread::hardware_concurrency());
+const uint16_t CPUthreadCount = static_cast<uint16_t>(std::thread::hardware_concurrency());
 
-//const uint32_t CPUthreadCount = 12; // Uncomment to run custom number of threads
+//const uint16_t CPUthreadCount = 12; // Uncomment to run custom number of threads
 
-const uint32_t Target = 250;
+const uint16_t Target = 10000; // max is 65,535
 
 const bool NoScreen = false; // set to true for benchmarking. the screen is cosmetic only
 
-std::atomic<uint32_t> result[Target] = {0};
+std::atomic<uint16_t> result[Target] = {0};
 
-uint32_t LastElement = 0;
+uint16_t LastElement = 0;
 
-uint32_t seen[Target] = {};
-uint32_t Pass = 1;
+uint16_t seen[Target] = {};
+uint16_t Pass = 1;
 
-bool Prime(uint32_t num) {
+bool Prime(uint16_t num) {
     if (num <= 1) return false;
     if (num == 2 || num == 3) return true;
     if (num % 2 == 0 || num % 3 == 0) return false;
-    for (uint32_t i = 5; i * i <= num; i += 6) {
+    for (uint16_t i = 5; i * i <= num; i += 6) {
         if (num % i == 0 || num % (i + 2) == 0)
             return false;
     }
     return true;
 }
 
-uint32_t qmod(uint32_t n , uint32_t x , uint32_t b)
+/*uint16_t qmod(uint16_t n , uint16_t x , uint16_t b)
 {
-    uint32_t r = 1;
-    uint32_t base = n % b;
-    uint32_t exp = x;
+    uint16_t r = 1;
+    uint16_t base = n % b;
+    uint16_t exp = x;
 
     while (exp > 0)
     {
@@ -72,23 +72,48 @@ uint32_t qmod(uint32_t n , uint32_t x , uint32_t b)
         exp /= 2;
     }
     return r;
-}
+}*/
 
-uint32_t CycleLength(uint32_t n, uint32_t b) {
-    uint32_t x = 1;
-    Pass++; // mark a new round
-    while (true) {
-        uint32_t q = qmod(n, x, b);
-        if (seen[q] == Pass)
+uint16_t CycleLength(uint16_t n, uint16_t b) {
+    bool Seen[Target] = {false};
+    uint16_t Index = 1;
+    uint16_t Term = n;
+    Seen[n] = true;
+    while (true)
+    {
+        Term = (Term * n) % b;
+        Index ++;
+        if (Seen[Term])
+        {
             break;
-        seen[q] = Pass;
-        x++;
+        }
+        Seen[Term] = true;
     }
-    return x - 1;
+    return Index - 1;
+}
+
+inline uint16_t HighestCycleLength(uint16_t x)
+{
+    if (Prime(x))
+    {
+        return x - 1;
+    }else
+    {
+        uint16_t hclX = 1;
+        for (uint16_t n = 2; n < x; n++)
+        {
+            const uint16_t baseB = CycleLength(n,x);
+            if (baseB > hclX)
+            {
+                hclX = baseB;
+            }
+        }
+        return hclX;
+    }
 }
 
 
-inline uint32_t HighestCycleLength(uint32_t x)
+/*inline uint16_t HighestCycleLength(uint16_t x)
 {
     if (Prime(x))
     {
@@ -96,10 +121,10 @@ inline uint32_t HighestCycleLength(uint32_t x)
     }
     else 
     {
-        uint32_t m = 0;
-        for (uint32_t i = 2; i < x; i++)
+        uint16_t m = 0;
+        for (uint16_t i = 2; i < x; i++)
         {
-            uint32_t b = CycleLength(i,x);
+            uint16_t b = CycleLength(i,x);
             if (b > m)
             {
                 m = b;
@@ -108,22 +133,22 @@ inline uint32_t HighestCycleLength(uint32_t x)
         return m;
     }
 }
-
+*/
 
 inline void worker(uint8_t WorkerNum)
 {
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(1 * WorkerNum)); // sleeps the thread enough so that race conditions with the first value shouldnt happen
-    uint32_t LastViewed = 2;// last element this worker worked on
+    //std::this_thread::sleep_for(std::chrono::milliseconds(1 * WorkerNum)); // sleeps the thread enough so that race conditions with the first value shouldnt happen
+    uint16_t LastViewed = WorkerNum - 1;// last element this worker worked on
     
     //std::cout << "result: " << result[Target - 1] << std::endl;
 
     while (result[Target - 1] == 0) // while the last result doesnt have a value greater than 0
     {
-        for (uint32_t i = LastViewed; i < Target; i++)
+        for (uint16_t i = LastViewed; i < Target; i++)
         {
-            uint32_t Zero = 0;
-            if (result[i].compare_exchange_strong(Zero,UINT32_MAX))
+            uint16_t Zero = 0;
+            if (result[i].compare_exchange_strong(Zero,UINT16_MAX))
             {
                 result[i] = 1; // this 'cell' is now occupied
 
@@ -171,7 +196,7 @@ int main()
 
     std::vector<std::thread> threads;
     std::thread DisplayThread(Screen);
-    for (uint32_t i = 1; i < CPUthreadCount + 1; i++)
+    for (uint16_t i = 1; i < CPUthreadCount + 1; i++)
     {
         threads.emplace_back(worker , i);
         //std::cout << "Sent out worker:  " << i << std::endl;
@@ -186,7 +211,7 @@ int main()
     auto EndTime = std::chrono::high_resolution_clock::now();
     auto durationChrono = std::chrono::duration_cast<std::chrono::microseconds>(EndTime - StartTime);
 
-    for (uint32_t i = 0; i < Target-1;i++)//print out output
+    for (uint16_t i = 0; i < Target-1;i++)//print out output
     {
         std::cout << i << ":"<< result[i] << std::endl;
     }
