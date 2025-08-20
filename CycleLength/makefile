@@ -1,6 +1,10 @@
 # Compiler and flags
 CXX := g++
+#Release
 CXXFLAGS := -Ofast -flto -fomit-frame-pointer -march=native -funroll-loops -ffast-math -fno-math-errno -fno-trapping-math -fno-signaling-nans -falign-functions=64 -DNDEBUG -fprefetch-loop-arrays -fmerge-all-constants -fmodulo-sched -fmodulo-sched-allow-regmoves -free -fipa-icf -floop-parallelize-all -ftree-loop-distribution -floop-interchange -fno-signed-zeros -fno-trapping-math -frounding-math -fsplit-loops -fversion-loops-for-strides -fstdarg-opt 
+
+#Debugging
+#CXXFLAGS := -march=native -Wall
 LDFLAGS = -pg
 
 # Directories
